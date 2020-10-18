@@ -8,6 +8,7 @@
 #include <sched.h>
 #include <time.h>
 
+#define BILLION 1000000000L
 
 // read buttonPress pipe
 void * readBP_Pipe(void * arg )
@@ -32,7 +33,7 @@ int main(void)
 {
     char gpsBuffer;
 	// not sure if we have this library installed
-	uint32_t timeDiff = 0;
+    u_int32_t timeDiff = 0;
 	struct timespec before, after;
 
     // mkfifo("/tmp/BP_pipe", 777); // returns 0 if successful?
@@ -49,7 +50,7 @@ int main(void)
     {
 
         // read from /tmp/N_pipe1
-        read(gpsd, gpsBuffer, 1);
+        read(gpsd, &gpsBuffer, 1);
         // create timeStamp (can use gettimeofday() look up example)
 		clock_gettime(CLOCK_MONOTONIC, &before);
 		printf("TESTING STUFF BETWEEN CLOCK READS \n");
