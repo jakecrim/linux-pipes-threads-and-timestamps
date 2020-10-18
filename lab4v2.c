@@ -8,14 +8,26 @@
 #include <sched.h>
 #include <time.h>
 
-// Defines
+/* Defines */
 #define BILLION 1000000000L
 #define MILLISECONDS 1000000
 
-// Variables
-u_int64_t before_data_and_time[2];
+/* Variables */
+// pos 0 = time , pos 1 = data
+u_int64_t before_time_and_data[2];
 
-// read buttonPress pipe
+
+// prints interpolated value and timestamps related to GPS stuff
+void * printResults(void * arg )
+{
+	while(1)
+	{
+		printf("Printing Thread waiting to print... \n");
+		usleep(1000000);
+	}
+}
+
+// buttonPress pipe handling thread
 void * readBP_Pipe(void * arg )
 {
     // open /tmp/BP_Pipe and store into button press descriptor
@@ -52,6 +64,11 @@ int main(void)
 
 
     // create thread to reap BP pipe
+	int threadCount = 2;
+	pthread_t threadID[threadCount];
+
+	pthread_create( &threadID[0], NULL, readBP_Pipe, NULL);	
+	pthread_create( &threadID[1], NULL, printResults, NULL);	
 
     while(1)
     {
@@ -61,15 +78,18 @@ int main(void)
 
         /* Create timestamp for each read */
 		clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-		before_data_and_time[0] = before.tv_nsec;
-		before_data_and_time[1] = gps_data;
-        printf("Before: Stamp %lu | Data %lu \n", before_data_and_time[0], before_data_and_time[1]);
+		before_time_and_data[0] = before.tv_nsec;
+		before_time_and_data[1] = gps_data;
+        printf("Before: Stamp %lu | Data %lu \n", before_time_and_data[0], before_time_and_data[1]);
 
         // wait 250 ms?
         usleep(250000);
         gps_data++;
     }
 
+	// joining all 3 threads
+	for(int i = 0; i < threadCount; i++)
+		pthread_join(threadID[i], NULL);
 
     return 0;
 
