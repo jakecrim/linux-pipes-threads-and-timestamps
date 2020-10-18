@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define BILLION 1000000000L
+#define MILLISECONDS 1000000
 
 // read buttonPress pipe
 void * readBP_Pipe(void * arg )
@@ -32,9 +33,11 @@ void * readBP_Pipe(void * arg )
 int main(void)
 {
     char gpsBuffer;
-	// not sure if we have this library installed
     u_int32_t timeDiff = 0;
 	struct timespec before, after;
+
+    //testing
+    int interrupt = 0;
 
     // mkfifo("/tmp/BP_pipe", 777); // returns 0 if successful?
 
@@ -49,18 +52,29 @@ int main(void)
     while(1)
     {
 
-        // read from /tmp/N_pipe1
-        read(gpsd, &gpsBuffer, 1);
-        // create timeStamp (can use gettimeofday() look up example)
-		clock_gettime(CLOCK_MONOTONIC, &before);
-		printf("TESTING STUFF BETWEEN CLOCK READS \n");
-		clock_gettime(CLOCK_MONOTONIC, &after);
+            /* read from /tmp/N_pipe1 */
+        // read(gpsd, &gpsBuffer, 1);
 
-		timeDiff = BILLION * (after.tv_sec - before.tv_sec) + after.tv_nsec - before.tv_nsec;	
-		printf("Difference between timestamps: %llu ns \n",(long long unsigned int) timeDiff);
+        /* Create timestamp for each read */
+		clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+        printf("Before Stamp: %lu \n", before.tv_nsec);
+
+
+        if(interrupt == 2)
+        {
+		    clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+            printf("After Stamp:  %lu \n", after.tv_nsec);
+
+		    timeDiff = (after.tv_sec - before.tv_sec) * 1000000 + (after.tv_nsec - before.tv_nsec);	
+    		printf("Difference between timestamps: %llu ns \n",(long long unsigned int) timeDiff);
+
+            interrupt = 0;
+        }
+
 
         // wait 250 ms?
         usleep(250000);
+        interrupt++;
     }
 
 
