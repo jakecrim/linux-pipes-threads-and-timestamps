@@ -81,7 +81,10 @@ int init_module()
 	printk("sel1 ptr %X \n", gpsel1_ptr);
 	unsigned long * gppud_ptr = (gpsel_ptr + 37);
 	unsigned long * gppudclk0_ptr = (gpsel_ptr + 38);
-	unsigned long * gpafen0_ptr = (gpsel_ptr + 34);
+    unsigned long * gpafen0_ptr = (gpsel_ptr + 34);
+	// change to gphen0
+	// unsigned long * gphen0_ptr = (gpsel_ptr + ??);
+	
 
 
 	// set as input
@@ -104,6 +107,8 @@ int init_module()
 
 	// set bit 16 for gparen0
 	iowrite32(0x00010000 , gpafen0_ptr);
+	//change to gphen0
+	// iowrite32(0x00010000 , gphen0_ptr);
 
 
     

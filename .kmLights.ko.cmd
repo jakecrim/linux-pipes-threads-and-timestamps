@@ -1,0 +1,1 @@
+cmd_/home/pi/ECE_4220_Labs/lab4/linux-pipes-threads-and-timestamps/kmLights.ko := ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/pi/ECE_4220_Labs/lab4/linux-pipes-threads-and-timestamps/kmLights.ko /home/pi/ECE_4220_Labs/lab4/linux-pipes-threads-and-timestamps/kmLights.o /home/pi/ECE_4220_Labs/lab4/linux-pipes-threads-and-timestamps/kmLights.mod.o ;  true

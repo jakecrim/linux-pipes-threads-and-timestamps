@@ -19,9 +19,9 @@ void * interpolateData(void * arg);
 
 /* Variables */
 // pos 0 = time , pos 1 = data
-u_int64_t before_time_and_data[2];
-u_int64_t button_press_time;
-u_int64_t after_time_and_data[2];
+u_int32_t before_time_and_data[2];
+u_int32_t button_press_time;
+u_int32_t after_time_and_data[2];
 
 // get the 'after' button press time stamp
 bool getAfterTS = false;
@@ -49,7 +49,7 @@ void * readBP_Pipe(void * arg )
     // test variable until pipes are working
 	int buttonPressed = 0;
     // open /tmp/BP_Pipe and store into button press descriptor
-    // int bpd = open("tmp/BP_pipe", O_RDONLY);
+    int bpd = open("/tmp/BP_pipe", O_RDWR);
 
     while(1)
     {
@@ -59,22 +59,28 @@ void * readBP_Pipe(void * arg )
 
 		// IF button pressed, spawn child thread to handle
 		// just to test for now, 
-		if(buttonPressed == 5)
-		{
-            printf("Button Pressed: \n");
+		// if(buttonPressed == 2)
+		// {
+        // printf("Button Pressed: \n");
+        printf("Test1 \n");
+        read(bpd, &buttonPressed, 4);
+        printf("BPressed VAL: %d \n", buttonPressed);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime);
+        printf("BP TIME: %lu \n", bpTime.tv_nsec);
+        button_press_time = bpTime.tv_nsec;
 
-            // signal that the timestamp after the button press needs retrieved
-            getAfterTS = true;
-            clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime);
-            button_press_time = bpTime.tv_nsec;
-			pthread_create( &threadID, NULL, interpolateData, NULL);
-			pthread_join(threadID, NULL);
-            buttonPressed = 0;
-		}
+        // signal that the timestamp after the button press needs retrieved
+        getAfterTS = true;
 
-		buttonPressed++;
+        // spawn child thread
+        pthread_create( &threadID, NULL, interpolateData, NULL);
+        pthread_join(threadID, NULL);
+        // buttonPressed = 0;
+		// }
+
+		// buttonPressed++;
         // Wait until next GPS
-        usleep(1000000);
+        // usleep(1000000);
         // do Interpolation
     }
 
@@ -115,12 +121,10 @@ int main(void)
     int interrupt = 0;
 	int gps_data = 0;
 
-    // mkfifo("/tmp/BP_pipe", 777); // returns 0 if successful?
 
+    
     // open /tmp/N_pipe1 and store into GPS descriptor
     int gpsd = open("/tmp/N_pipe1", O_RDONLY );
-
-
 
     // create thread to reap BP pipe
 	int threadCount = 2;
@@ -133,13 +137,15 @@ int main(void)
     {
 
         /* read from /tmp/N_pipe1 */
-        // read(gpsd, &gpsBuffer, 1);
-
+        read(gpsd, &gpsBuffer, 1);
+        // printf("Current Buffer: %d \n", gpsBuffer);
         /* Create timestamp for each read */
         if(getAfterTS == false)
         {
             clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+            // printf("Before TS: %lu \n", before.tv_nsec);
             before_time_and_data[0] = before.tv_nsec;
+            // printf("Before from array: %lu \n", before_time_and_data[0]);
             before_time_and_data[1] = gps_data;
         }
         else

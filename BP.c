@@ -24,7 +24,15 @@ int main(void)
     struct sched_param param1;
 	struct timespec bpTime;
 
-    int bpfd = open("/tmp/BP_pipe", O_WRONLY);
+    int pipeFSD = mkfifo("/tmp/BP_pipe", 0777); // returns 0 if successful?
+    if(pipeFSD <  0)
+        printf("Making unsuccesful \n");
+    else
+        printf("Pipe made \n");
+
+    int bpfd = open("/tmp/BP_pipe", O_RDWR);
+
+    printf("test1 \n");
 
     // getting access to rPi registers for reading gpeds0
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -33,12 +41,13 @@ int main(void)
         printf("Error Opening Linux File \n");
         return 0;
     }
+    printf("test2 \n");
     // offset for GPEDS ...
     gpsel0 = (unsigned long *)mmap(NULL, getpagesize(), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x3F200000);
     
     gpeds0 = gpsel0 + GPEDS_OFFSET; 
     // clearing gpeds reg
-    *(gpeds0) = 0x00010000
+    *(gpeds0) = 0x00010000;
 
 	// sched stuff
     // period of 60 ms 
@@ -46,19 +55,23 @@ int main(void)
     sched_setscheduler(0, SCHED_FIFO , &param1);
     //initialize the timer (lab2 pt2)
         // set clock init clock_gettime();
+    
+    int test = 5;
 
     while(1)
     {
-        if(*(gpdes0) != 0))
+        printf("GPEDS VALUE: 0x%08x \n", *(gpeds0));
+        if(*(gpeds0) != 0)
         {
             // Create timeStamp
 			clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime);
-
-            // write to P2 through pipe (/tmp/BP_Pipe)
-			write(bpfd, bpTime.tv_nsec, 4);
+            printf("Button Pressed \n");
+            // // write to P2 through pipe (/tmp/BP_Pipe)
+			write(bpfd, &test, 4);
 
             // clearing gpeds reg
-            *(gpeds0) = 0x00010000
+            *(gpeds0) = 0x00010000;
+            test++;
         }
 
 		usleep(60000);
