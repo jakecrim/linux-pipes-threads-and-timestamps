@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sched.h>
 #include <time.h>
+#include <pthread.h>
 
 /* Defines */
 #define BILLION 1000000000L
@@ -15,6 +16,7 @@
 /* Variables */
 // pos 0 = time , pos 1 = data
 u_int64_t before_time_and_data[2];
+u_int64_t after_time_and_data[2];
 
 
 // prints interpolated value and timestamps related to GPS stuff
@@ -23,27 +25,58 @@ void * printResults(void * arg )
 	while(1)
 	{
 		printf("Printing Thread waiting to print... \n");
-		usleep(1000000);
+
+        // read from pipe, info for printing
+
+		usleep(10000000);
 	}
 }
 
 // buttonPress pipe handling thread
 void * readBP_Pipe(void * arg )
 {
+	pthread_t threadID;
+	int buttonPressed = 0;
     // open /tmp/BP_Pipe and store into button press descriptor
     // int bpd = open("tmp/BP_pipe", O_RDONLY);
 
-    // if gpeds not zero? then 
     while(1)
     {
         printf("Read BP Thread Running: \n");
         // Read from button press descriptor
         // read(bpd,someOtherStruct, 1);
+
+		// IF button pressed, spawn child thread to handle
+		// just to test for now, 
+		if(buttonPressed == 10)
+		{
+			pthread_create( &threadID, NULL, interpolateData, NULL);
+			pthread_join(threadID, NULL);
+		}
+
+		buttonPressed++;
         // Wait until next GPS
         usleep(1000000);
         // do Interpolation
     }
 
+}
+
+void * interpolateData(void * arg )
+{
+	struct timespec after;
+	int gps_data = 22;
+
+	// get after_time_and_data info	
+	clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+	after_time_and_data[0] = after.tv_nsec;
+	after_time_and_data[1] = gps_data;
+	printf("After: Stamp %lu | Data %lu \n", after_time_and_data[0], after_time_and_data[1]);
+	// interpolate
+	timeDiff = after_time_and_data[0] - before_time_and_data[0];	
+	printf("Difference between timestamps: %llu ns \n",(long long unsigned int) timeDiff);
+	printf("Interpolating... \n");
+	
 }
 
 int main(void)
