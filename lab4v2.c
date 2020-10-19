@@ -115,9 +115,9 @@ int main(void)
 		before_time_and_data[1] = gps_data;
         printf("Before: Stamp %lu | Data %lu \n", before_time_and_data[0], before_time_and_data[1]);
 
-        // wait 250 ms?
+        // wait 250 ms
         usleep(250000);
-        gps_data++;
+        gps_data++; // for testing
     }
 
 	// joining all 3 threads
