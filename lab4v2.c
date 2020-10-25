@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sched.h>
 #include <time.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 // declarations
@@ -48,8 +49,12 @@ void * readBP_Pipe(void * arg )
 	pthread_t threadID;
     // test variable until pipes are working
 	int buttonPressed = 0;
+    struct timeval bpTime2;
     // open /tmp/BP_Pipe and store into button press descriptor
     int bpd = open("/tmp/BP_pipe", O_RDWR);
+
+    int test = 0;
+    u_int32_t ulTest = 0;
 
     while(1)
     {
@@ -62,12 +67,10 @@ void * readBP_Pipe(void * arg )
 		// if(buttonPressed == 2)
 		// {
         // printf("Button Pressed: \n");
-        printf("Test1 \n");
-        read(bpd, &buttonPressed, 4);
-        printf("BPressed VAL: %d \n", buttonPressed);
-        clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime);
-        printf("BP TIME: %lu \n", bpTime.tv_nsec);
-        button_press_time = bpTime.tv_nsec;
+        printf("\n-----------------------------------------\n");
+        read(bpd, &button_press_time, 4);
+        button_press_time = (button_press_time / 1000);
+        // printf("ms: %lu \n", button_press_time);
 
         // signal that the timestamp after the button press needs retrieved
         getAfterTS = true;
@@ -75,13 +78,8 @@ void * readBP_Pipe(void * arg )
         // spawn child thread
         pthread_create( &threadID, NULL, interpolateData, NULL);
         pthread_join(threadID, NULL);
-        // buttonPressed = 0;
-		// }
 
-		// buttonPressed++;
-        // Wait until next GPS
-        // usleep(1000000);
-        // do Interpolation
+        printf("\n-----------------------------------------\n");
     }
 
 }
@@ -100,14 +98,10 @@ void * interpolateData(void * arg )
         usleep(5);
     }
 	// interpolate
-	printf("Interpolating... \n");
-    printf("Before time: %lu ns \n", before_time_and_data[0]);
-    printf("After  time: %lu ns \n", after_time_and_data[0]);
-	timeDiff = after_time_and_data[0] - before_time_and_data[0];	
-	printf("Difference between timestamps: %llu ms \n",(long long unsigned int) timeDiff / 1000000);
-    pressAfterTime = button_press_time - before_time_and_data[0];
-	printf("Button pressed %llu ms after last GPS data-point. \n",(long long unsigned int) pressAfterTime / 1000000);
-	
+    printf("Before time: %lu ms \n", before_time_and_data[0]);
+    printf("Button press time: %lu ms \n", button_press_time);
+    printf("After  time: %lu ms \n", after_time_and_data[0]);
+	timeDiff = after_time_and_data[0] - before_time_and_data[0];		
 
 }
 
@@ -115,7 +109,8 @@ int main(void)
 {
     char gpsBuffer;
     u_int32_t timeDiff = 0;
-	struct timespec before, after;
+	// struct timespec before, after;
+    struct timeval before, after, temp;
 
     //testing
     int interrupt = 0;
@@ -138,29 +133,44 @@ int main(void)
 
         /* read from /tmp/N_pipe1 */
         read(gpsd, &gpsBuffer, 1);
-        // printf("Current Buffer: %d \n", gpsBuffer);
         /* Create timestamp for each read */
+        gettimeofday(&temp, NULL);
         if(getAfterTS == false)
         {
-            clock_gettime(CLOCK_MONOTONIC_RAW, &before);
-            // printf("Before TS: %lu \n", before.tv_nsec);
-            before_time_and_data[0] = before.tv_nsec;
-            // printf("Before from array: %lu \n", before_time_and_data[0]);
+            before_time_and_data[0] = (temp.tv_usec / 1000);
             before_time_and_data[1] = gps_data;
         }
-        else
+        else //button press has happened and we need the time of the next GPS message
         {
-            clock_gettime(CLOCK_MONOTONIC_RAW, &after);
-            after_time_and_data[0] = after.tv_nsec;
-            after_time_and_data[1] = gps_data;
-            getAfterTS = false;
+            after_time_and_data[0] = (temp.tv_usec / 1000); // time index
+            after_time_and_data[1] = gps_data; //data index 
+            getAfterTS = false; // done getting the timestamp that happened AFTER button press
         }
         
-        // printf("Before: Stamp %lu | Data %lu \n", before_time_and_data[0], before_time_and_data[1]);
-
-        // wait 250 ms
-        usleep(250000);
         gps_data++; // for testing
+
+
+
+        // if(getAfterTS == false)
+        // {
+        //     clock_gettime(CLOCK_MONOTONIC_RAW, &before);
+        //     // printf("Before TS: %lu \n", before.tv_nsec);
+        //     before_time_and_data[0] = before.tv_nsec;
+        //     // printf("Before from array: %lu \n", before_time_and_data[0]);
+        //     before_time_and_data[1] = gps_data;
+        // }
+        // else
+        // {
+        //     clock_gettime(CLOCK_MONOTONIC_RAW, &after);
+        //     after_time_and_data[0] = after.tv_nsec;
+        //     after_time_and_data[1] = gps_data;
+        //     getAfterTS = false;
+        // }
+        
+        // // printf("Before: Stamp %lu | Data %lu \n", before_time_and_data[0], before_time_and_data[1]);
+
+        // // wait 250 ms
+        // usleep(250000);
     }
 
 	// joining all 3 threads

@@ -11,6 +11,7 @@
 #include <sched.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/time.h>
 
 
 // Defines
@@ -22,7 +23,8 @@ unsigned long * gpeds0;
 int main(void)
 {
     struct sched_param param1;
-	struct timespec bpTime;
+	struct timespec bpTime1;
+    struct timeval bpTime2;
 
     int pipeFSD = mkfifo("/tmp/BP_pipe", 0777); // returns 0 if successful?
     if(pipeFSD <  0)
@@ -64,14 +66,16 @@ int main(void)
         if(*(gpeds0) != 0)
         {
             // Create timeStamp
-			clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime);
+			clock_gettime(CLOCK_MONOTONIC_RAW, &bpTime1);
+            gettimeofday(&bpTime2, NULL);
+            printf("bp1 time: %lu us bp2 time: %lu \n", bpTime1.tv_sec , bpTime2.tv_sec);
             printf("Button Pressed \n");
             // // write to P2 through pipe (/tmp/BP_Pipe)
-			write(bpfd, &test, 4);
+			write(bpfd, &bpTime2.tv_usec, 4);
 
             // clearing gpeds reg
             *(gpeds0) = 0x00010000;
-            test++;
+            test;
         }
 
 		usleep(60000);
